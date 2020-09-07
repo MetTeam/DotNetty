@@ -6,14 +6,16 @@ namespace DotNetty.Common.Utilities
     using System;
     using System.Threading;
     using DotNetty.Common.Internal.Logging;
+    using Thread = DotNetty.Common.Concurrency.XThread;
 
-    public sealed class ReferenceCountUtil
+    public static class ReferenceCountUtil
     {
-        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ReferenceCountUtil>();
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance(typeof(ReferenceCountUtil));
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#retain()} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Retain()"/> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing.
         /// </summary>
         public static T Retain<T>(T msg)
         {
@@ -26,8 +28,9 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#retain(int)} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Retain(int)"/> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing.
         /// </summary>
         public static T Retain<T>(T msg, int increment)
         {
@@ -40,9 +43,9 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Tries to call <see cref="IReferenceCounted.Touch()" /> if the specified message implements
-        ///     <see cref="IReferenceCounted" />.
-        ///     If the specified message doesn't implement <see cref="IReferenceCounted" />, this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Touch()" /> if the specified message implements
+        /// <see cref="IReferenceCounted" />.
+        /// If the specified message doesn't implement <see cref="IReferenceCounted" />, this method does nothing.
         /// </summary>
         public static T Touch<T>(T msg)
         {
@@ -55,9 +58,9 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Tries to call <see cref="IReferenceCounted.Touch(object)" /> if the specified message implements
-        ///     <see cref="IReferenceCounted" />. If the specified message doesn't implement <see cref="IReferenceCounted" />,
-        ///     this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Touch(object)" /> if the specified message implements
+        /// <see cref="IReferenceCounted" />. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted" />, this method does nothing.
         /// </summary>
         public static T Touch<T>(T msg, object hint)
         {
@@ -70,8 +73,9 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#release()} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Release()" /> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing.
         /// </summary>
         public static bool Release(object msg)
         {
@@ -84,8 +88,9 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#release(int)} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+        /// Tries to call <see cref="IReferenceCounted.Release(int)" /> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing.
         /// </summary>
         public static bool Release(object msg, int decrement)
         {
@@ -98,11 +103,12 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#release()} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
-        ///     Unlike {@link #release(Object)} this method catches an exception raised by {@link ReferenceCounted#release()}
-        ///     and logs it, rather than rethrowing it to the caller.  It is usually recommended to use {@link #release(Object)}
-        ///     instead, unless you absolutely need to swallow an exception.
+        /// Tries to call <see cref="IReferenceCounted.Release()" /> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing. Unlike <see cref="Release(object)"/>, this
+        /// method catches an exception raised by <see cref="IReferenceCounted.Release()" /> and logs it, rather than
+        /// rethrowing it to the caller. It is usually recommended to use <see cref="Release(object)"/> instead, unless
+        /// you absolutely need to swallow an exception.
         /// </summary>
         public static void SafeRelease(object msg)
         {
@@ -117,11 +123,12 @@ namespace DotNetty.Common.Utilities
         }
 
         /// <summary>
-        ///     Try to call {@link ReferenceCounted#release(int)} if the specified message implements {@link ReferenceCounted}.
-        ///     If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
-        ///     Unlike {@link #release(Object)} this method catches an exception raised by {@link ReferenceCounted#release(int)}
-        ///     and logs it, rather than rethrowing it to the caller.  It is usually recommended to use
-        ///     {@link #release(Object, int)} instead, unless you absolutely need to swallow an exception.
+        /// Tries to call <see cref="IReferenceCounted.Release(int)" /> if the specified message implements
+        /// <see cref="IReferenceCounted"/>. If the specified message doesn't implement
+        /// <see cref="IReferenceCounted"/>, this method does nothing. Unlike <see cref="Release(object)"/>, this
+        /// method catches an exception raised by <see cref="IReferenceCounted.Release(int)" /> and logs it, rather
+        /// than rethrowing it to the caller. It is usually recommended to use <see cref="Release(object, int)"/>
+        /// instead, unless you absolutely need to swallow an exception.
         /// </summary>
         public static void SafeRelease(object msg, int decrement)
         {
@@ -138,17 +145,41 @@ namespace DotNetty.Common.Utilities
             }
         }
 
+        public static void SafeRelease(this IReferenceCounted msg)
+        {
+            try
+            {
+                msg?.Release();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("Failed to release a message: {}", msg, ex);
+            }
+        }
+
+        public static void SafeRelease(this IReferenceCounted msg, int decrement)
+        {
+            try
+            {
+                msg?.Release(decrement);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("Failed to release a message: {} (decrement: {})", msg, decrement, ex);
+            }
+        }
+
         /// <summary>
-        ///     Schedules the specified object to be released when the caller thread terminates. Note that this operation is
-        ///     intended to simplify reference counting of ephemeral objects during unit tests. Do not use it beyond the
-        ///     intended use case.
+        /// Schedules the specified object to be released when the caller thread terminates. Note that this operation
+        /// is intended to simplify reference counting of ephemeral objects during unit tests. Do not use it beyond the
+        /// intended use case.
         /// </summary>
         public static T ReleaseLater<T>(T msg) => ReleaseLater(msg, 1);
 
         /// <summary>
-        ///     Schedules the specified object to be released when the caller thread terminates. Note that this operation is
-        ///     intended to simplify reference counting of ephemeral objects during unit tests. Do not use it beyond the
-        ///     intended use case.
+        /// Schedules the specified object to be released when the caller thread terminates. Note that this operation
+        /// is intended to simplify reference counting of ephemeral objects during unit tests. Do not use it beyond the
+        /// intended use case.
         /// </summary>
         public static T ReleaseLater<T>(T msg, int decrement)
         {
@@ -178,9 +209,6 @@ namespace DotNetty.Common.Utilities
         }
 
         static string FormatReleaseString(IReferenceCounted referenceCounted, int decrement)
-        {
-            return referenceCounted.GetType().Name + ".Release(" + decrement.ToString() + ") refCnt: "
-                + referenceCounted.ReferenceCount.ToString();
-        }
+            => $"{referenceCounted.GetType().Name}.Release({decrement.ToString()}) refCnt: {referenceCounted.ReferenceCount.ToString()}";
     }
 }

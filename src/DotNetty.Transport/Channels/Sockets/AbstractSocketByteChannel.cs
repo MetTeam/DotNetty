@@ -10,12 +10,13 @@ namespace DotNetty.Transport.Channels.Sockets
     using DotNetty.Common.Utilities;
 
     /// <summary>
-    ///     {@link AbstractNioChannel} base class for {@link Channel}s that operate on bytes.
+    /// <see cref="AbstractSocketChannel"/> base class for <see cref="IChannel"/>s that operate on bytes.
     /// </summary>
     public abstract class AbstractSocketByteChannel : AbstractSocketChannel
     {
         static readonly string ExpectedTypes =
             $" (expected: {StringUtil.SimpleClassName<IByteBuffer>()})"; //+ ", " +
+
         // todo: FileRegion support        
         //typeof(FileRegion).Name + ')';
 
@@ -51,7 +52,7 @@ namespace DotNetty.Transport.Channels.Sockets
                     //    key.interestOps(key.interestOps() & ~readInterestOp);
                     //    this.channel.Pipeline.FireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
                     //} else {
-                    this.CloseAsync();
+                    this.CloseSafe();
                     //}
                 }
             }
@@ -83,7 +84,10 @@ namespace DotNetty.Transport.Channels.Sockets
             public override void FinishRead(SocketChannelAsyncOperation operation)
             {
                 AbstractSocketByteChannel ch = this.Channel;
-                ch.ResetState(StateFlags.ReadScheduled);
+                if ((ch.ResetState(StateFlags.ReadScheduled) & StateFlags.Active) == 0)
+                {
+                    return; // read was signaled as a result of channel closure
+                }
                 IChannelConfiguration config = ch.Configuration;
                 IChannelPipeline pipeline = ch.Pipeline;
                 IByteBufferAllocator allocator = config.Allocator;
@@ -150,6 +154,9 @@ namespace DotNetty.Transport.Channels.Sockets
         {
             SocketChannelAsyncOperation operation = this.ReadOperation;
             bool pending;
+#if NETSTANDARD1_3
+            pending = this.Socket.ReceiveAsync(operation);
+#else
             if (ExecutionContext.IsFlowSuppressed())
             {
                 pending = this.Socket.ReceiveAsync(operation);
@@ -161,6 +168,7 @@ namespace DotNetty.Transport.Channels.Sockets
                     pending = this.Socket.ReceiveAsync(operation);
                 }
             }
+#endif
             if (!pending)
             {
                 // todo: potential allocation / non-static field?
@@ -223,9 +231,8 @@ namespace DotNetty.Transport.Channels.Sockets
                     {
                         input.Remove();
                     }
-                    else
+                    else if (this.IncompleteWrite(scheduleAsync, this.PrepareWriteOperation(buf.GetIoBuffer())))
                     {
-                        this.IncompleteWrite(scheduleAsync, this.PrepareWriteOperation(buf.GetIoBuffer()));
                         break;
                     }
                 } /*else if (msg is FileRegion) { todo: FileRegion support
@@ -293,7 +300,7 @@ namespace DotNetty.Transport.Channels.Sockets
                 "unsupported message type: " + msg.GetType().Name + ExpectedTypes);
         }
 
-        protected void IncompleteWrite(bool scheduleAsync, SocketChannelAsyncOperation operation)
+        protected bool IncompleteWrite(bool scheduleAsync, SocketChannelAsyncOperation operation)
         {
             // Did not write completely.
             if (scheduleAsync)
@@ -301,6 +308,9 @@ namespace DotNetty.Transport.Channels.Sockets
                 this.SetState(StateFlags.WriteScheduled);
                 bool pending;
 
+#if NETSTANDARD1_3
+                pending = this.Socket.SendAsync(operation);
+#else
                 if (ExecutionContext.IsFlowSuppressed())
                 {
                     pending = this.Socket.SendAsync(operation);
@@ -312,16 +322,21 @@ namespace DotNetty.Transport.Channels.Sockets
                         pending = this.Socket.SendAsync(operation);
                     }
                 }
+#endif
 
                 if (!pending)
                 {
                     ((ISocketChannelUnsafe)this.Unsafe).FinishWrite(operation);
                 }
+
+                return pending;
             }
             else
             {
                 // Schedule flush again later so other tasks can be picked up input the meantime
                 this.EventLoop.Execute(FlushAction, this);
+
+                return true;
             }
         }
 
@@ -335,13 +350,17 @@ namespace DotNetty.Transport.Channels.Sockets
         //protected abstract long doWriteFileRegion(FileRegion region);
 
         /// <summary>
-        ///     Read bytes into the given {@link ByteBuf} and return the amount.
+        /// Reads bytes into the given <see cref="IByteBuffer"/> and returns the number of bytes that were read.
         /// </summary>
+        /// <param name="buf">The <see cref="IByteBuffer"/> to read bytes into.</param>
+        /// <returns>The number of bytes that were read into the buffer.</returns>
         protected abstract int DoReadBytes(IByteBuffer buf);
 
-        /// <summary>Write bytes form the given <see cref="IByteBuffer"/> to the underlying <see cref="IChannel"/>.</summary>
-        /// <param name="buf">the <see cref="IByteBuffer"/> from which the bytes should be written</param>
-        /// <returns>the amount of written bytes</returns>
+        /// <summary>
+        /// Writes bytes from the given <see cref="IByteBuffer"/> to the underlying <see cref="IChannel"/>.
+        /// </summary>
+        /// <param name="buf">The <see cref="IByteBuffer"/> from which the bytes should be written.</param>
+        /// <returns>The number of bytes that were written from the buffer.</returns>
         protected abstract int DoWriteBytes(IByteBuffer buf);
     }
 }

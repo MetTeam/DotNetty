@@ -5,6 +5,8 @@ namespace DotNetty.Transport.Channels
 {
     using System;
     using System.Diagnostics.Contracts;
+    using System.Net;
+    using System.Net.NetworkInformation;
     using DotNetty.Buffers;
     using DotNetty.Common.Utilities;
 
@@ -17,18 +19,41 @@ namespace DotNetty.Transport.Channels
 
         static readonly ChannelOptionPool Pool = new ChannelOptionPool();
 
-        /// <summary>Returns the {@link ChannelOption} of the specified name.</summary>
+        /// <summary>
+        /// Returns the <see cref="ChannelOption"/> of the specified name.
+        /// </summary>
+        /// <typeparam name="T">The type of option being retrieved.</typeparam>
+        /// <param name="name">The name of the desired option.</param>
+        /// <returns>The matching <see cref="ChannelOption{T}"/> instance.</returns>
         public static ChannelOption<T> ValueOf<T>(string name) => (ChannelOption<T>)Pool.ValueOf<T>(name);
 
-        /// <summary>Shortcut of {@link #valueOf(String) valueOf(firstNameComponent.getName() + "#" + secondNameComponent)}.</summary>
+        /// <summary>
+        /// Returns the <see cref="ChannelOption{T}"/> of the given pair: (<see cref="Type"/>, secondary name)
+        /// </summary>
+        /// <typeparam name="T">The type of option being retrieved.</typeparam>
+        /// <param name="firstNameComponent">
+        /// A <see cref="Type"/> whose name will be used as the first part of the desired option's name.
+        /// </param>
+        /// <param name="secondNameComponent">
+        /// A string representing the second part of the desired option's name.
+        /// </param>
+        /// <returns>The matching <see cref="ChannelOption{T}"/> instance.</returns>
         public static ChannelOption<T> ValueOf<T>(Type firstNameComponent, string secondNameComponent) => (ChannelOption<T>)Pool.ValueOf<T>(firstNameComponent, secondNameComponent);
 
-        /// <summary>Returns {@code true} if a {@link ChannelOption} exists for the given {@code name}.</summary>
+        /// <summary>
+        /// Checks whether a given <see cref="ChannelOption"/> exists.
+        /// </summary>
+        /// <param name="name">The name of the <see cref="ChannelOption"/>.</param>
+        /// <returns><c>true</c> if a <see cref="ChannelOption"/> exists for the given <paramref name="name"/>, otherwise <c>false</c>.</returns>
         public static bool Exists(string name) => Pool.Exists(name);
 
-        /// <summary>Creates a new {@link ChannelOption} for the given {@code name} or fail with an
-        /// {@link IllegalArgumentException} if a {@link ChannelOption} for the given {@code name} exists.
+        /// <summary>
+        /// Creates a new <see cref="ChannelOption"/> for the given <paramref name="name"/>.
         /// </summary>
+        /// <typeparam name="T">The type of option to create.</typeparam>
+        /// <param name="name">The name to associate with the new option.</param>
+        /// <exception cref="ArgumentException">Thrown if a <see cref="ChannelOption"/> for the given <paramref name="name"/> exists.</exception>
+        /// <returns>The new <see cref="ChannelOption{T}"/> instance.</returns>
         public static  ChannelOption<T> NewInstance<T>(string name) => (ChannelOption<T>)Pool.NewInstance<T>(name);
 
         public static readonly ChannelOption<IByteBufferAllocator> Allocator = ValueOf<IByteBufferAllocator>("ALLOCATOR");
@@ -48,13 +73,14 @@ namespace DotNetty.Transport.Channels
         public static readonly ChannelOption<int> SoSndbuf = ValueOf<int>("SO_SNDBUF");
         public static readonly ChannelOption<int> SoRcvbuf = ValueOf<int>("SO_RCVBUF");
         public static readonly ChannelOption<bool> SoReuseaddr = ValueOf<bool>("SO_REUSEADDR");
+        public static readonly ChannelOption<bool> SoReuseport = ValueOf<bool>("SO_REUSEPORT");
         public static readonly ChannelOption<int> SoLinger = ValueOf<int>("SO_LINGER");
         public static readonly ChannelOption<int> SoBacklog = ValueOf<int>("SO_BACKLOG");
         public static readonly ChannelOption<int> SoTimeout = ValueOf<int>("SO_TIMEOUT");
 
-        //public static readonly ChannelOption<int> IP_TOS = ValueOf<int>("IP_TOS");
-        //public static readonly ChannelOption<InetAddress> IP_MULTICAST_ADDR = ValueOf<int>("IP_MULTICAST_ADDR");
-        //public static readonly ChannelOption<NetworkInterface> IP_MULTICAST_IF = ValueOf<int>("IP_MULTICAST_IF");
+        public static readonly ChannelOption<int> IpTos = ValueOf<int>("IP_TOS");
+        public static readonly ChannelOption<EndPoint> IpMulticastAddr = ValueOf<EndPoint>("IP_MULTICAST_ADDR");
+        public static readonly ChannelOption<NetworkInterface> IpMulticastIf = ValueOf<NetworkInterface>("IP_MULTICAST_IF");
         public static readonly ChannelOption<int> IpMulticastTtl = ValueOf<int>("IP_MULTICAST_TTL");
         public static readonly ChannelOption<bool> IpMulticastLoopDisabled = ValueOf<bool>("IP_MULTICAST_LOOP_DISABLED");
 

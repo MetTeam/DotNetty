@@ -151,6 +151,9 @@ namespace DotNetty.Codecs
         public override void HandlerRemoved(IChannelHandlerContext context)
         {
             IByteBuffer buf = this.InternalBuffer;
+
+            // Directly set this to null so we are sure we not access it in any other method here anymore.
+            this.cumulation = null;
             int readable = buf.ReadableBytes;
             if (readable > 0)
             {
@@ -162,7 +165,7 @@ namespace DotNetty.Codecs
             {
                 buf.Release();
             }
-            this.cumulation = null;
+
             context.FireChannelReadComplete();
             this.HandlerRemovedInternal(context);
         }
@@ -246,7 +249,7 @@ namespace DotNetty.Codecs
                 // See:
                 // - https://github.com/netty/netty/issues/2327
                 // - https://github.com/netty/netty/issues/1764
-                this.cumulation.DiscardReadBytes(); // todo: use discardSomeReadBytes
+                this.cumulation.DiscardSomeReadBytes();
             }
         }
 
@@ -304,6 +307,10 @@ namespace DotNetty.Codecs
 
         protected virtual void CallDecode(IChannelHandlerContext context, IByteBuffer input, List<object> output)
         {
+            Contract.Requires(context != null);
+            Contract.Requires(input != null);
+            Contract.Requires(output != null);
+
             try
             {
                 while (input.IsReadable())
@@ -356,6 +363,14 @@ namespace DotNetty.Codecs
             }
         }
 
-        protected virtual void DecodeLast(IChannelHandlerContext context, IByteBuffer input, List<object> output) => this.Decode(context, input, output);
+        protected virtual void DecodeLast(IChannelHandlerContext context, IByteBuffer input, List<object> output)
+        {
+            if (input.IsReadable())
+            {
+                // Only call decode() if there is something left in the buffer to decode.
+                // See https://github.com/netty/netty/issues/4386
+                this.Decode(context, input, output);
+            }
+        }
     }
 }

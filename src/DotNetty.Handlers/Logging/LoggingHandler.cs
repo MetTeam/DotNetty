@@ -94,6 +94,8 @@ namespace DotNetty.Handlers.Logging
             this.InternalLevel = level.ToInternalLevel();
         }
 
+        public override bool IsSharable => true;
+
         /// <summary>
         ///     Returns the <see cref="LogLevel" /> that this handler uses to log
         /// </summary>
@@ -207,6 +209,48 @@ namespace DotNetty.Handlers.Logging
             ctx.FireChannelRead(message);
         }
 
+        public override void ChannelReadComplete(IChannelHandlerContext ctx)
+        {
+            if (this.Logger.IsEnabled(this.InternalLevel))
+            {
+                this.Logger.Log(this.InternalLevel, this.Format(ctx, "RECEIVED_COMPLETE"));
+            }
+            ctx.FireChannelReadComplete();
+        }
+
+        public override void ChannelWritabilityChanged(IChannelHandlerContext ctx)
+        {
+            if (this.Logger.IsEnabled(this.InternalLevel))
+            {
+                this.Logger.Log(this.InternalLevel, this.Format(ctx, "WRITABILITY", ctx.Channel.IsWritable));
+            }
+            ctx.FireChannelWritabilityChanged();
+        }
+
+        public override void HandlerAdded(IChannelHandlerContext ctx)
+        {
+            if (this.Logger.IsEnabled(this.InternalLevel))
+            {
+                this.Logger.Log(this.InternalLevel, this.Format(ctx, "HANDLER_ADDED"));
+            }
+        }
+        public override void HandlerRemoved(IChannelHandlerContext ctx)
+        {
+            if (this.Logger.IsEnabled(this.InternalLevel))
+            {
+                this.Logger.Log(this.InternalLevel, this.Format(ctx, "HANDLER_REMOVED"));
+            }
+        }
+
+        public override void Read(IChannelHandlerContext ctx)
+        {
+            if (this.Logger.IsEnabled(this.InternalLevel))
+            {
+                this.Logger.Log(this.InternalLevel, this.Format(ctx, "READ"));
+            }
+            ctx.Read();
+        }
+
         public override Task WriteAsync(IChannelHandlerContext ctx, object msg)
         {
             if (this.Logger.IsEnabled(this.InternalLevel))
@@ -229,7 +273,7 @@ namespace DotNetty.Handlers.Logging
         ///     Formats an event and returns the formatted message
         /// </summary>
         /// <param name="eventName">the name of the event</param>
-        protected string Format(IChannelHandlerContext ctx, string eventName)
+        protected virtual string Format(IChannelHandlerContext ctx, string eventName)
         {
             string chStr = ctx.Channel.ToString();
             return new StringBuilder(chStr.Length + 1 + eventName.Length)
@@ -244,7 +288,7 @@ namespace DotNetty.Handlers.Logging
         /// </summary>
         /// <param name="eventName">the name of the event</param>
         /// <param name="arg">the argument of the event</param>
-        protected string Format(IChannelHandlerContext ctx, string eventName, object arg)
+        protected virtual string Format(IChannelHandlerContext ctx, string eventName, object arg)
         {
             if (arg is IByteBuffer)
             {
@@ -267,7 +311,7 @@ namespace DotNetty.Handlers.Logging
         /// <param name="eventName">the name of the event</param>
         /// <param name="firstArg">the first argument of the event</param>
         /// <param name="secondArg">the second argument of the event</param>
-        protected string Format(IChannelHandlerContext ctx, string eventName, object firstArg, object secondArg)
+        protected virtual string Format(IChannelHandlerContext ctx, string eventName, object firstArg, object secondArg)
         {
             if (secondArg == null)
             {
